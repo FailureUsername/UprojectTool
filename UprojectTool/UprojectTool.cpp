@@ -3,52 +3,112 @@
 #include <iostream>
 #include <stdio.h>
 #include "json.hpp"
+#include <windows.h>
+
+#define BUILD_COMMAND ".\\Engine\\Build\\BatchFiles\\Build.bat "
+#define BUILD_TARGET " Win64 "
 using json = nlohmann::json;
+
+void showInfos(const std::string& uproject_path) {
+    std::ifstream file(uproject_path);
+    if (!file.is_open()) {
+        std::cerr << "Impossible d'ouvrir le fichier: " << uproject_path << std::endl;
+        return;
+    }
+
+    
+    json data = json::parse(file);
+
+    if (data.find("Modules") == data.end()) {
+        std::cerr << "Section [Modules] introuvable dans le fichier .uproject, nom impossible à afficher" << std::endl;
+        return;
+    }
+
+    std::cout << "\nINFORMATIONS UPROJECT\n" << std::endl;
+    std::string projectName = data["Modules"][0]["Name"];
+    std::string EngineVersion = data["EngineAssociation"];
+
+    if (EngineVersion.length() > 3) {
+        EngineVersion = "Build from source";
+    }
+    
+    std::cout << "Version Moteur: " << EngineVersion << std::endl;
+    std::cout << "Nom du Projet: " << projectName << std::endl;
+
+    if (data.find("Plugins") == data.end()) {
+        std::cout << "Section [Plugins] introuvable dans le fichier .uproject" << std::endl;
+        return;
+    }
+
+    std::cout << "\nPlugins installés: " << std::endl;
+
+    json plugins = data["Plugins"];
+    for (json::iterator it = plugins.begin(); it != plugins.end(); ++it) {
+        std::string pluginName = it.value()["Name"];
+        std::cout << "-" + pluginName + "\n" << std::endl;
+    }
+}
+
+void build(const std::string& uproject_path)
+{
+    std::ifstream file(uproject_path);
+    if (!file.is_open()) {
+        std::cerr << "Impossible d'ouvrir le fichier: " << uproject_path << std::endl;
+        return;
+    }
+
+    
+    json data = json::parse(file);
+
+    if (data.find("Modules") == data.end()) {
+        std::cerr << "Section [Modules] introuvable dans le fichier .uproject, nom impossible à récupérer" << std::endl;
+        return;
+    }
+
+    std::string projectName = data["Modules"][0]["Name"];
+    std::string target = projectName +"Editor";
+    std::string command = std::string(BUILD_COMMAND) + " " + projectName + " " + target +
+                         std::string(BUILD_TARGET) + " Development " + uproject_path + " -waitmutex";
+    int result = system(command.c_str());
+    if (result != 0) {
+        std::cerr << "Error: Build command failed with code " << result << std::endl;
+    }
+}
+
+void package(const std::string& uproject_path,const std::string&  package_path)
+{
+    std::string command = ".\\Engine\\Build\\BatchFiles\\RunUAT.bat -ScriptsForProject=" + uproject_path +" BuildCookRun -project="+ uproject_path+ " -noP4 -clientconfig=Development -serverconfig=Development -nocompileeditor -unrealexe=D:\\UnrealEngine\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe -utf8output -platform=Win64 -build -cook -map=StarterMap+StarterMap -CookCultures=en -unversionedcookedcontent -stage -package -cmdline=\"StarterMap -Messaging\" -addcmdline=\"-SessionId=3A4C909349894D2A60F6DCA10549798B -SessionOwner='fchal' -SessionName='MyFirstPackagingProfile'   \"" + "-archivedirectory="+package_path;
+    int result = system(command.c_str());
+    if (result != 0) {
+        std::cerr << "Error: Build command failed with code " << result << std::endl;
+    }
+}
+
+
+
 int main(int argc, char* argv[])
 {
+    SetConsoleOutputCP(CP_UTF8);
+    const std::string projectPath = argv[1];
+    
     if (strcmp(argv[2], "show-infos") == 0 )
         {
-            std::cout << "infos\n";
-            std::ifstream uproject_file(argv[1]);
-            json data = json::parse(uproject_file);
-            //std::cout << data;
+            showInfos(projectPath);
+        }
+        if (strcmp(argv[2], "build") == 0 )
+        {
+            build(projectPath);
+        }
+        if (strcmp(argv[2], "package") == 0 )
+        {
             
-    
-            for (const auto& item : data.items())
+            if(argc>3)
             {
-                if (item.key()== "EngineAssociation" || item.key()=="Plugins")
-                {
-                    std::cout << item.key() ;
-                    for (const auto& val : item.value().items())
-                    {
-                        std::cout << "  " << val.key() << ": " << val.value() << "\n";
-                    }
-                }
-                if (item.key()== "Modules")
-                {
-                    std::cout << item.key() ;
-                    for (const auto& val : item.value().items())
-                    {
-                        if (val.key() == "0")
-                        {
-                            for (const auto& val2 : val.value().items())
-                            {
-                                if (val2.key() == "Name")
-                                std::cout << "  " << val2.key() << ": " << val2.value() << "\n";
-                            }
-                        }
-                    }
-                }
+                const std::string packagePath = argv[3]; 
+                package(projectPath, packagePath);
             }
-            
-        }
-        if (strcmp(argv[1], "build") == 0 )
-        {
-            std::cout << "build function unavailable\n";
-        }
-        if (strcmp(argv[1], "package") == 0 )
-        {
-            std::cout << "package function unavailable\n";
+            else
+                std::cerr << "Pas de path" << std::endl;
         }
     return 0;
 }
