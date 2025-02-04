@@ -77,7 +77,10 @@ void build(const std::string& uproject_path)
 
 void package(const std::string& uproject_path,const std::string&  package_path)
 {
-    std::string command = ".\\Engine\\Build\\BatchFiles\\RunUAT.bat -ScriptsForProject=" + uproject_path +" BuildCookRun -project="+ uproject_path+ " -noP4 -clientconfig=Development -serverconfig=Development -nocompileeditor -unrealexe=D:\\UnrealEngine\\Engine\\Binaries\\Win64\\UnrealEditor-Cmd.exe -utf8output -platform=Win64 -build -cook -map=StarterMap+StarterMap -CookCultures=en -unversionedcookedcontent -stage -package -cmdline=\"StarterMap -Messaging\" -addcmdline=\"-SessionId=3A4C909349894D2A60F6DCA10549798B -SessionOwner='fchal' -SessionName='MyFirstPackagingProfile'   \"" + "-archivedirectory="+package_path;
+    std::cout << "Project Path: " << uproject_path << std::endl;
+    std::string command =
+    ".\\Engine\\Build\\BatchFiles\\RunUAT.bat -ScriptsForProject="+ uproject_path +" BuildCookRun -project="+ uproject_path +" -noP4 -clientconfig=Development -serverconfig=Development -nocompileeditor -unrealexe=UnrealEditor-Cmd.exe -utf8output -platform=Win64 -build -cook -CookCultures=en -unversionedcookedcontent -stage -package -cmdline=\" -Messaging\" -addcmdline=\"-SessionId=64491F724FBC769EE969F29ADEBD68E5 -SessionOwner='fchal' -SessionName='MyFirstPackagingProfile'   \" -archive -archivedirectory="+ package_path;
+    std::cout << "Executing command: " << command << std::endl;
     int result = system(command.c_str());
     if (result != 0) {
         std::cerr << "Error: Build command failed with code " << result << std::endl;
@@ -108,7 +111,7 @@ int main(int argc, char* argv[])
                 package(projectPath, packagePath);
             }
             else
-                std::cerr << "Pas de path" << std::endl;
+                std::cerr << "Pas de path de de pour le package" << std::endl;
         }
     return 0;
 }
